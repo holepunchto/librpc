@@ -1,0 +1,4 @@
+[submodule "vendor/libcompact"]
+	path = vendor/libcompact
+	url = ../../holepunchto/libcompact.git
+	shallow = true
