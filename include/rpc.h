@@ -45,7 +45,7 @@ struct rpc_message_s {
     struct {
       utf8_string_view_t message;
       utf8_string_view_t code;
-      intmax_t errno;
+      intmax_t status;
     };
   };
 };

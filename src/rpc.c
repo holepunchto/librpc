@@ -33,7 +33,7 @@ rpc_preencode__response (compact_state_t *state, const rpc_message_t *response) 
     err = compact_preencode_utf8(state, response->code);
     assert(err == 0);
 
-    err = compact_preencode_int(state, response->errno);
+    err = compact_preencode_int(state, response->status);
     assert(err == 0);
   } else {
     err = compact_preencode_uint8array(state, response->data, response->len);
@@ -98,7 +98,7 @@ rpc_encode__response (compact_state_t *state, const rpc_message_t *response) {
     err = compact_encode_utf8(state, response->code);
     assert(err == 0);
 
-    err = compact_encode_int(state, response->errno);
+    err = compact_encode_int(state, response->status);
     assert(err == 0);
   } else {
     err = compact_encode_uint8array(state, response->data, response->len);
@@ -182,7 +182,7 @@ rpc_decode__response (compact_state_t *state, rpc_message_t *result) {
     err = compact_decode_utf8(state, &response.code);
     if (err < 0) return rpc_error;
 
-    err = compact_decode_int(state, &response.errno);
+    err = compact_decode_int(state, &response.status);
     if (err < 0) return rpc_error;
   } else {
     err = compact_decode_uint8array(state, &response.data, &response.len);
