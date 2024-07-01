@@ -56,6 +56,9 @@ rpc_preencode_message (compact_state_t *state, const rpc_message_t *message) {
   err = compact_preencode_uint(state, message->type);
   assert(err == 0);
 
+  err = compact_preencode_uint(state, message->id);
+  assert(err == 0);
+
   switch (message->type) {
   case rpc_request:
     err = rpc_preencode__request(state, message);
@@ -125,6 +128,9 @@ rpc_encode_message (compact_state_t *state, const rpc_message_t *message) {
   err = compact_encode_uint(state, message->type);
   assert(err == 0);
 
+  err = compact_encode_uint(state, message->id);
+  assert(err == 0);
+
   switch (message->type) {
   case rpc_request:
     err = rpc_encode__request(state, message);
@@ -147,10 +153,10 @@ rpc_encode_message (compact_state_t *state, const rpc_message_t *message) {
 }
 
 int
-rpc_decode__request (compact_state_t *state, rpc_message_t *result) {
+rpc_decode__request (compact_state_t *state, uintmax_t id, rpc_message_t *result) {
   int err;
 
-  rpc_message_t request = {rpc_request};
+  rpc_message_t request = {rpc_request, id};
 
   err = compact_decode_utf8(state, &request.command);
   if (err < 0) return rpc_error;
@@ -167,10 +173,10 @@ rpc_decode__request (compact_state_t *state, rpc_message_t *result) {
 }
 
 int
-rpc_decode__response (compact_state_t *state, rpc_message_t *result) {
+rpc_decode__response (compact_state_t *state, uintmax_t id, rpc_message_t *result) {
   int err;
 
-  rpc_message_t response = {rpc_response};
+  rpc_message_t response = {rpc_response, id};
 
   err = compact_decode_bool(state, &response.error);
   if (err < 0) return rpc_error;
@@ -209,14 +215,18 @@ rpc_decode_message (compact_state_t *state, rpc_message_t *result) {
 
   uintmax_t type;
   err = compact_decode_uint(state, &type);
-  assert(err == 0);
+  if (err < 0) return rpc_error;
+
+  uintmax_t id;
+  err = compact_decode_uint(state, &id);
+  if (err < 0) return rpc_error;
 
   switch (type) {
   case rpc_request:
-    err = rpc_decode__request(state, result);
+    err = rpc_decode__request(state, id, result);
     break;
   case rpc_response:
-    err = rpc_decode__response(state, result);
+    err = rpc_decode__response(state, id, result);
     break;
   default:
     return rpc_error;
