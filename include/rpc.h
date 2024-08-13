@@ -32,10 +32,10 @@ enum {
   rpc_stream_data = 0x10,
   rpc_stream_end = 0x20,
 
-  // Only valid `rpc_stream_open` is set
+  // Only valid if `rpc_stream_open` is set
   rpc_stream_initiator = 0x40,
 
-  // Only valid `rpc_stream_close` is set
+  // Only valid if `rpc_stream_close` is set
   rpc_stream_error = 0x80,
 };
 
