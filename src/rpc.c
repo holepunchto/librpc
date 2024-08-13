@@ -53,7 +53,7 @@ rpc_preencode__stream (compact_state_t *state, const rpc_message_t *stream) {
   err = compact_preencode_uint(state, stream->state);
   assert(err == 0);
 
-  if (stream->state & rpc_stream_has_error) {
+  if (stream->state & rpc_stream_error) {
     err = compact_preencode_utf8(state, stream->message);
     assert(err == 0);
 
@@ -151,7 +151,7 @@ rpc_encode__stream (compact_state_t *state, const rpc_message_t *stream) {
   err = compact_encode_uint(state, stream->state);
   assert(err == 0);
 
-  if (stream->state & rpc_stream_has_error) {
+  if (stream->state & rpc_stream_error) {
     err = compact_encode_utf8(state, stream->message);
     assert(err == 0);
 
@@ -272,7 +272,7 @@ rpc_decode__stream (compact_state_t *state, uintmax_t id, rpc_message_t *result)
   err = compact_decode_uint(state, &response.state);
   if (err < 0) return rpc_error;
 
-  if (response.state & rpc_stream_has_error) {
+  if (response.state & rpc_stream_error) {
     err = compact_decode_utf8(state, &response.message);
     if (err < 0) return rpc_error;
 
