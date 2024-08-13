@@ -37,7 +37,6 @@ enum {
 
 struct rpc_message_s {
   uintmax_t type;
-
   uintmax_t id;
 
   union {
@@ -46,19 +45,23 @@ struct rpc_message_s {
 
     // For `rpc_response`
     bool error;
-
-    // For `rpc_stream`
-    uintmax_t state;
   };
 
+  uintmax_t stream;
+
   union {
-    // For `rpc_request`, `rpc_response` if `error == false`, and `rpc_stream` if `state & rpc_stream_data`
+    // For:
+    //   1. `rpc_request` if `stream == 0`
+    //   2. `rpc_response` if `stream == 0` and `error == false`
+    //   3. `rpc_stream` if `stream & rpc_stream_data`
     struct {
       uint8_t *data;
       size_t len;
     };
 
-    // For `rpc_response` if `error == true` and `rpc_stream` if `state & rpc_stream_error`
+    // For:
+    //   1. `rpc_response` if `stream == 0` and `error == true`
+    //   2. `rpc_stream` if `stream & rpc_stream_error`
     struct {
       utf8_string_view_t message;
       utf8_string_view_t code;

@@ -10,11 +10,13 @@ rpc_preencode__request (compact_state_t *state, const rpc_message_t *request) {
   err = compact_preencode_utf8(state, request->command);
   assert(err == 0);
 
-  err = compact_preencode_uint8array(state, request->data, request->len);
+  err = compact_preencode_uint(state, request->stream);
   assert(err == 0);
 
-  err = compact_preencode_uint(state, 0); // Reserved
-  assert(err == 0);
+  if (request->stream == 0) {
+    err = compact_preencode_uint8array(state, request->data, request->len);
+    assert(err == 0);
+  }
 
   return err;
 }
@@ -26,6 +28,9 @@ rpc_preencode__response (compact_state_t *state, const rpc_message_t *response) 
   err = compact_preencode_bool(state, response->error);
   assert(err == 0);
 
+  err = compact_preencode_uint(state, response->stream);
+  assert(err == 0);
+
   if (response->error) {
     err = compact_preencode_utf8(state, response->message);
     assert(err == 0);
@@ -35,13 +40,10 @@ rpc_preencode__response (compact_state_t *state, const rpc_message_t *response) 
 
     err = compact_preencode_int(state, response->status);
     assert(err == 0);
-  } else {
+  } else if (response->stream == 0) {
     err = compact_preencode_uint8array(state, response->data, response->len);
     assert(err == 0);
   }
-
-  err = compact_preencode_uint(state, 0); // Reserved
-  assert(err == 0);
 
   return err;
 }
@@ -50,10 +52,10 @@ int
 rpc_preencode__stream (compact_state_t *state, const rpc_message_t *stream) {
   int err;
 
-  err = compact_preencode_uint(state, stream->state);
+  err = compact_preencode_uint(state, stream->stream);
   assert(err == 0);
 
-  if (stream->state & rpc_stream_error) {
+  if (stream->stream & rpc_stream_error) {
     err = compact_preencode_utf8(state, stream->message);
     assert(err == 0);
 
@@ -62,13 +64,10 @@ rpc_preencode__stream (compact_state_t *state, const rpc_message_t *stream) {
 
     err = compact_preencode_int(state, stream->status);
     assert(err == 0);
-  } else if (stream->state & rpc_stream_data) {
+  } else if (stream->stream & rpc_stream_data) {
     err = compact_preencode_uint8array(state, stream->data, stream->len);
     assert(err == 0);
   }
-
-  err = compact_preencode_uint(state, 0); // Reserved
-  assert(err == 0);
 
   return err;
 }
@@ -108,11 +107,13 @@ rpc_encode__request (compact_state_t *state, const rpc_message_t *request) {
   err = compact_encode_utf8(state, request->command);
   assert(err == 0);
 
-  err = compact_encode_uint8array(state, request->data, request->len);
+  err = compact_encode_uint(state, request->stream);
   assert(err == 0);
 
-  err = compact_encode_uint(state, 0); // Reserved
-  assert(err == 0);
+  if (request->stream == 0) {
+    err = compact_encode_uint8array(state, request->data, request->len);
+    assert(err == 0);
+  }
 
   return err;
 }
@@ -124,6 +125,9 @@ rpc_encode__response (compact_state_t *state, const rpc_message_t *response) {
   err = compact_encode_bool(state, response->error);
   assert(err == 0);
 
+  err = compact_encode_uint(state, response->stream);
+  assert(err == 0);
+
   if (response->error) {
     err = compact_encode_utf8(state, response->message);
     assert(err == 0);
@@ -133,13 +137,10 @@ rpc_encode__response (compact_state_t *state, const rpc_message_t *response) {
 
     err = compact_encode_int(state, response->status);
     assert(err == 0);
-  } else {
+  } else if (response->stream == 0) {
     err = compact_encode_uint8array(state, response->data, response->len);
     assert(err == 0);
   }
-
-  err = compact_encode_uint(state, 0); // Reserved
-  assert(err == 0);
 
   return err;
 }
@@ -148,10 +149,10 @@ int
 rpc_encode__stream (compact_state_t *state, const rpc_message_t *stream) {
   int err;
 
-  err = compact_encode_uint(state, stream->state);
+  err = compact_encode_uint(state, stream->stream);
   assert(err == 0);
 
-  if (stream->state & rpc_stream_error) {
+  if (stream->stream & rpc_stream_error) {
     err = compact_encode_utf8(state, stream->message);
     assert(err == 0);
 
@@ -160,13 +161,10 @@ rpc_encode__stream (compact_state_t *state, const rpc_message_t *stream) {
 
     err = compact_encode_int(state, stream->status);
     assert(err == 0);
-  } else if (stream->state & rpc_stream_data) {
+  } else if (stream->stream & rpc_stream_data) {
     err = compact_encode_uint8array(state, stream->data, stream->len);
     assert(err == 0);
   }
-
-  err = compact_encode_uint(state, 0); // Reserved
-  assert(err == 0);
 
   return err;
 }
@@ -221,11 +219,13 @@ rpc_decode__request (compact_state_t *state, uintmax_t id, rpc_message_t *result
   err = compact_decode_utf8(state, &request.command);
   if (err < 0) return rpc_error;
 
-  err = compact_decode_uint8array(state, &request.data, &request.len);
+  err = compact_decode_uint(state, &request.stream);
   if (err < 0) return rpc_error;
 
-  err = compact_decode_uint(state, NULL); // Reserved
-  if (err < 0) return rpc_error;
+  if (request.stream == 0) {
+    err = compact_decode_uint8array(state, &request.data, &request.len);
+    if (err < 0) return rpc_error;
+  }
 
   if (result) *result = request;
 
@@ -241,6 +241,9 @@ rpc_decode__response (compact_state_t *state, uintmax_t id, rpc_message_t *resul
   err = compact_decode_bool(state, &response.error);
   if (err < 0) return rpc_error;
 
+  err = compact_decode_uint(state, &response.stream);
+  if (err < 0) return rpc_error;
+
   if (response.error) {
     err = compact_decode_utf8(state, &response.message);
     if (err < 0) return rpc_error;
@@ -250,13 +253,10 @@ rpc_decode__response (compact_state_t *state, uintmax_t id, rpc_message_t *resul
 
     err = compact_decode_int(state, &response.status);
     if (err < 0) return rpc_error;
-  } else {
+  } else if (response.stream == 0) {
     err = compact_decode_uint8array(state, &response.data, &response.len);
     if (err < 0) return rpc_error;
   }
-
-  err = compact_decode_uint(state, NULL); // Reserved
-  if (err < 0) return rpc_error;
 
   if (result) *result = response;
 
@@ -269,10 +269,13 @@ rpc_decode__stream (compact_state_t *state, uintmax_t id, rpc_message_t *result)
 
   rpc_message_t response = {rpc_response, id};
 
-  err = compact_decode_uint(state, &response.state);
+  err = compact_decode_uint(state, &response.stream);
   if (err < 0) return rpc_error;
 
-  if (response.state & rpc_stream_error) {
+  err = compact_decode_uint(state, &response.stream);
+  if (err < 0) return rpc_error;
+
+  if (response.stream & rpc_stream_error) {
     err = compact_decode_utf8(state, &response.message);
     if (err < 0) return rpc_error;
 
@@ -281,13 +284,10 @@ rpc_decode__stream (compact_state_t *state, uintmax_t id, rpc_message_t *result)
 
     err = compact_decode_int(state, &response.status);
     if (err < 0) return rpc_error;
-  } else if (response.state & rpc_stream_data) {
+  } else if (response.stream & rpc_stream_data) {
     err = compact_decode_uint8array(state, &response.data, &response.len);
     if (err < 0) return rpc_error;
   }
-
-  err = compact_decode_uint(state, NULL); // Reserved
-  if (err < 0) return rpc_error;
 
   if (result) *result = response;
 
