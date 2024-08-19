@@ -18,12 +18,27 @@ enum {
   rpc_partial = -2,
 };
 
-struct rpc_message_s {
-  enum {
-    rpc_request = 1,
-    rpc_response = 2,
-  } type;
+enum {
+  rpc_request = 1,
+  rpc_response = 2,
+  rpc_stream = 3,
+};
 
+enum {
+  rpc_stream_open = 0x1,
+  rpc_stream_close = 0x2,
+  rpc_stream_pause = 0x4,
+  rpc_stream_resume = 0x8,
+  rpc_stream_data = 0x10,
+  rpc_stream_end = 0x20,
+  rpc_stream_destroy = 0x40,
+  rpc_stream_error = 0x80,
+  rpc_stream_request = 0x100,
+  rpc_stream_response = 0x200,
+};
+
+struct rpc_message_s {
+  uintmax_t type;
   uintmax_t id;
 
   union {
@@ -34,14 +49,21 @@ struct rpc_message_s {
     bool error;
   };
 
+  uintmax_t stream;
+
   union {
-    // For `rpc_request` and `rpc_response` if `error == false`
+    // For:
+    //   1. `rpc_request` if `stream == 0`
+    //   2. `rpc_response` if `stream == 0` and `error == false`
+    //   3. `rpc_stream` if `stream & rpc_stream_data`
     struct {
       uint8_t *data;
       size_t len;
     };
 
-    // For `rpc_response` if `error == true`
+    // For:
+    //   1. `rpc_response` if `stream == 0` and `error == true`
+    //   2. `rpc_stream` if `stream & rpc_stream_error`
     struct {
       utf8_string_view_t message;
       utf8_string_view_t code;
