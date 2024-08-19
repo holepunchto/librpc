@@ -31,8 +31,10 @@ enum {
   rpc_stream_resume = 0x8,
   rpc_stream_data = 0x10,
   rpc_stream_end = 0x20,
-  rpc_stream_initiator = 0x40,
+  rpc_stream_destroy = 0x40,
   rpc_stream_error = 0x80,
+  rpc_stream_request = 0x100,
+  rpc_stream_response = 0x200,
 };
 
 struct rpc_message_s {
