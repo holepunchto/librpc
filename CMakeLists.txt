@@ -1,10 +1,10 @@
 cmake_minimum_required(VERSION 3.25)
 
+find_package(cmake-fetch REQUIRED PATHS node_modules/cmake-fetch)
+
 project(rpc C)
 
-if(NOT TARGET compact)
-  add_subdirectory(vendor/libcompact EXCLUDE_FROM_ALL)
-endif()
+fetch_package("github:holepunchto/libcompact")
 
 add_library(rpc OBJECT)
 
