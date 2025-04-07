@@ -1,7 +1,6 @@
 #ifndef RPC_H
 #define RPC_H
 
-#include "utf/string.h"
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -9,6 +8,8 @@ extern "C" {
 #include <compact.h>
 #include <stdint.h>
 #include <utf.h>
+
+#include "utf/string.h"
 
 typedef struct rps_s rpc_t;
 typedef struct rpc_message_s rpc_message_t;
@@ -43,7 +44,7 @@ struct rpc_message_s {
 
   union {
     // For `rpc_request`
-    utf8_string_view_t command;
+    uintmax_t command;
 
     // For `rpc_response`
     bool error;

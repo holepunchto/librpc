@@ -3,11 +3,11 @@
 
 #include "../include/rpc.h"
 
-int
+static inline int
 rpc_preencode__request (compact_state_t *state, const rpc_message_t *request) {
   int err;
 
-  err = compact_preencode_utf8(state, request->command);
+  err = compact_preencode_uint(state, request->command);
   assert(err == 0);
 
   err = compact_preencode_uint(state, request->stream);
@@ -21,7 +21,7 @@ rpc_preencode__request (compact_state_t *state, const rpc_message_t *request) {
   return err;
 }
 
-int
+static inline int
 rpc_preencode__response (compact_state_t *state, const rpc_message_t *response) {
   int err;
 
@@ -48,7 +48,7 @@ rpc_preencode__response (compact_state_t *state, const rpc_message_t *response) 
   return err;
 }
 
-int
+static inline int
 rpc_preencode__stream (compact_state_t *state, const rpc_message_t *stream) {
   int err;
 
@@ -100,11 +100,11 @@ rpc_preencode_message (compact_state_t *state, const rpc_message_t *message) {
   return err;
 }
 
-int
+static inline int
 rpc_encode__request (compact_state_t *state, const rpc_message_t *request) {
   int err;
 
-  err = compact_encode_utf8(state, request->command);
+  err = compact_encode_uint(state, request->command);
   assert(err == 0);
 
   err = compact_encode_uint(state, request->stream);
@@ -118,7 +118,7 @@ rpc_encode__request (compact_state_t *state, const rpc_message_t *request) {
   return err;
 }
 
-int
+static inline int
 rpc_encode__response (compact_state_t *state, const rpc_message_t *response) {
   int err;
 
@@ -145,7 +145,7 @@ rpc_encode__response (compact_state_t *state, const rpc_message_t *response) {
   return err;
 }
 
-int
+static inline int
 rpc_encode__stream (compact_state_t *state, const rpc_message_t *stream) {
   int err;
 
@@ -210,13 +210,13 @@ rpc_encode_message (compact_state_t *state, const rpc_message_t *message) {
   return err;
 }
 
-int
+static inline int
 rpc_decode__request (compact_state_t *state, uintmax_t id, rpc_message_t *result) {
   int err;
 
   rpc_message_t request = {rpc_request, id};
 
-  err = compact_decode_utf8(state, &request.command);
+  err = compact_decode_uint(state, &request.command);
   if (err < 0) return rpc_error;
 
   err = compact_decode_uint(state, &request.stream);
@@ -232,7 +232,7 @@ rpc_decode__request (compact_state_t *state, uintmax_t id, rpc_message_t *result
   return 0;
 }
 
-int
+static inline int
 rpc_decode__response (compact_state_t *state, uintmax_t id, rpc_message_t *result) {
   int err;
 
@@ -263,7 +263,7 @@ rpc_decode__response (compact_state_t *state, uintmax_t id, rpc_message_t *resul
   return 0;
 }
 
-int
+static inline int
 rpc_decode__stream (compact_state_t *state, uintmax_t id, rpc_message_t *result) {
   int err;
 
