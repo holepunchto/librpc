@@ -211,7 +211,7 @@ rpc_encode_message (compact_state_t *state, const rpc_message_t *message) {
 }
 
 static inline int
-rpc_decode__request (compact_state_t *state, uintmax_t id, rpc_message_t *result) {
+rpc_decode__request (compact_state_t *state, uint64_t id, rpc_message_t *result) {
   int err;
 
   rpc_message_t request = {rpc_request, id};
@@ -233,7 +233,7 @@ rpc_decode__request (compact_state_t *state, uintmax_t id, rpc_message_t *result
 }
 
 static inline int
-rpc_decode__response (compact_state_t *state, uintmax_t id, rpc_message_t *result) {
+rpc_decode__response (compact_state_t *state, uint64_t id, rpc_message_t *result) {
   int err;
 
   rpc_message_t response = {rpc_response, id};
@@ -264,7 +264,7 @@ rpc_decode__response (compact_state_t *state, uintmax_t id, rpc_message_t *resul
 }
 
 static inline int
-rpc_decode__stream (compact_state_t *state, uintmax_t id, rpc_message_t *result) {
+rpc_decode__stream (compact_state_t *state, uint64_t id, rpc_message_t *result) {
   int err;
 
   rpc_message_t response = {rpc_response, id};
@@ -304,11 +304,11 @@ rpc_decode_message (compact_state_t *state, rpc_message_t *result) {
 
   if (state->end - state->start < frame) return rpc_partial;
 
-  uintmax_t type;
+  uint64_t type;
   err = compact_decode_uint(state, &type);
   if (err < 0) return rpc_error;
 
-  uintmax_t id;
+  uint64_t id;
   err = compact_decode_uint(state, &id);
   if (err < 0) return rpc_error;
 

@@ -11,7 +11,6 @@ extern "C" {
 
 #include "utf/string.h"
 
-typedef struct rps_s rpc_t;
 typedef struct rpc_message_s rpc_message_t;
 
 enum {
@@ -39,18 +38,18 @@ enum {
 };
 
 struct rpc_message_s {
-  uintmax_t type;
-  uintmax_t id;
+  uint64_t type;
+  uint64_t id;
 
   union {
     // For `rpc_request`
-    uintmax_t command;
+    uint64_t command;
 
     // For `rpc_response`
     bool error;
   };
 
-  uintmax_t stream;
+  uint64_t stream;
 
   union {
     // For:
@@ -68,7 +67,7 @@ struct rpc_message_s {
     struct {
       utf8_string_view_t message;
       utf8_string_view_t code;
-      intmax_t status;
+      int64_t status;
     };
   };
 };
