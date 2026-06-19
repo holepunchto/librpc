@@ -267,29 +267,26 @@ static inline int
 rpc_decode__stream (compact_state_t *state, uint64_t id, rpc_message_t *result) {
   int err;
 
-  rpc_message_t response = {rpc_response, id};
+  rpc_message_t stream = {rpc_stream, id};
 
-  err = compact_decode_uint(state, &response.stream);
+  err = compact_decode_uint(state, &stream.stream);
   if (err < 0) return rpc_error;
 
-  err = compact_decode_uint(state, &response.stream);
-  if (err < 0) return rpc_error;
-
-  if (response.stream & rpc_stream_error) {
-    err = compact_decode_utf8(state, &response.message);
+  if (stream.stream & rpc_stream_error) {
+    err = compact_decode_utf8(state, &stream.message);
     if (err < 0) return rpc_error;
 
-    err = compact_decode_utf8(state, &response.code);
+    err = compact_decode_utf8(state, &stream.code);
     if (err < 0) return rpc_error;
 
-    err = compact_decode_int(state, &response.status);
+    err = compact_decode_int(state, &stream.status);
     if (err < 0) return rpc_error;
-  } else if (response.stream & rpc_stream_data) {
-    err = compact_decode_uint8array(state, &response.data, &response.len);
+  } else if (stream.stream & rpc_stream_data) {
+    err = compact_decode_uint8array(state, &stream.data, &stream.len);
     if (err < 0) return rpc_error;
   }
 
-  if (result) *result = response;
+  if (result) *result = stream;
 
   return 0;
 }
