@@ -1,5 +1,6 @@
 list(APPEND tests
   message
+  client
 )
 
 foreach(test IN LISTS tests)
