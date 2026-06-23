@@ -74,7 +74,7 @@ rpc_client_read (rpc_client_t *client, const uint8_t *buf, size_t len) {
   // reentrant read (which could realloc the buffer) is refused, so the msg
   // views handed to a callback stay valid. A future "allow reentrant read"
   // change must not break this.
-  client->reading = 1;
+  client->reading = true;
 
   if (len > 0) {
     size_t need = client->buffer_len + len;
@@ -83,7 +83,7 @@ rpc_client_read (rpc_client_t *client, const uint8_t *buf, size_t len) {
       while (cap < need) cap *= 2;
       uint8_t *next = realloc(client->buffer, cap);
       if (next == NULL) {
-        client->reading = 0;
+        client->reading = false;
         return rpc_client_err_alloc;
       }
       client->buffer = next;
@@ -100,7 +100,7 @@ rpc_client_read (rpc_client_t *client, const uint8_t *buf, size_t len) {
     int r = rpc_decode_message(&state, &msg);
     if (r == rpc_partial) break;
     if (r < 0) { // any other negative is a hard decode error (malformed frame)
-      client->reading = 0;
+      client->reading = false;
       return rpc_client_err_decode;
     }
     if (!rpc_client__resolve(client, &msg)) {
@@ -114,6 +114,6 @@ rpc_client_read (rpc_client_t *client, const uint8_t *buf, size_t len) {
     client->buffer_len -= start;
   }
 
-  client->reading = 0;
+  client->reading = false;
   return 0;
 }

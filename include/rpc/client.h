@@ -5,6 +5,7 @@
 extern "C" {
 #endif
 
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
 
@@ -35,7 +36,7 @@ typedef struct rpc_client_s {
   rpc_client_cb on_message; // fallthrough: events, stream frames, untracked
   void *on_message_data;
 
-  uint8_t reading; // reentrancy guard for rpc_client_read
+  bool reading; // reentrancy guard for rpc_client_read
 } rpc_client_t;
 
 // client error codes (< 0), distinct from rpc_error / rpc_partial
