@@ -189,6 +189,198 @@ test_read_empty (void) {
   rpc_client_destroy(&client);
 }
 
+typedef struct {
+  int count;
+  uint64_t last_id;
+  bool last_error;
+  int64_t last_status;
+} reply_t;
+
+static void
+on_reply (void *data, const rpc_message_t *msg) {
+  reply_t *r = data;
+  r->count++;
+  r->last_id = msg->id;
+  r->last_error = msg->error;
+  if (msg->error) r->last_status = msg->status;
+}
+
+static uint8_t *
+error_frame (uint64_t id, size_t *len) {
+  rpc_message_t msg = {0};
+  msg.type = rpc_response;
+  msg.id = id;
+  msg.error = true;
+  msg.stream = 0;
+  msg.message = (utf8_string_view_t){(const utf8_t *) "boom", 4};
+  msg.code = (utf8_string_view_t){(const utf8_t *) "ERR", 3};
+  msg.status = 500;
+  return encode_message(&msg, len);
+}
+
+static void
+test_track_resolves_once (void) {
+  recorder_t fall = {0};
+  reply_t reply = {0};
+  rpc_client_t client;
+  rpc_client_init(&client, on_fallthrough, &fall);
+
+  assert(rpc_client_track(&client, 7, on_reply, &reply) == 0);
+
+  uint8_t payload[] = {1, 2, 3};
+  size_t len;
+  uint8_t *frame = response_frame(7, payload, sizeof(payload), &len);
+
+  // first response resolves the pending callback, not the fallthrough
+  assert(rpc_client_read(&client, frame, len) == 0);
+  assert(reply.count == 1);
+  assert(reply.last_id == 7);
+  assert(reply.last_error == false);
+  assert(fall.count == 0);
+
+  // a second response for the same id falls through (entry was removed)
+  assert(rpc_client_read(&client, frame, len) == 0);
+  assert(reply.count == 1);
+  assert(fall.count == 1);
+
+  free(frame);
+  rpc_client_destroy(&client);
+}
+
+static void
+test_error_reply_resolves (void) {
+  reply_t reply = {0};
+  rpc_client_t client;
+  rpc_client_init(&client, noop, NULL);
+
+  rpc_client_track(&client, 4, on_reply, &reply);
+
+  size_t len;
+  uint8_t *frame = error_frame(4, &len);
+
+  assert(rpc_client_read(&client, frame, len) == 0);
+  assert(reply.count == 1);
+  assert(reply.last_id == 4);
+  assert(reply.last_error == true);
+  assert(reply.last_status == 500);
+
+  free(frame);
+  rpc_client_destroy(&client);
+}
+
+static void
+test_untrack (void) {
+  recorder_t fall = {0};
+  reply_t reply = {0};
+  rpc_client_t client;
+  rpc_client_init(&client, on_fallthrough, &fall);
+
+  rpc_client_track(&client, 9, on_reply, &reply);
+  assert(rpc_client_untrack(&client, 9) == 0);
+  assert(rpc_client_untrack(&client, 999) == 0); // idempotent: absent id
+
+  uint8_t payload[] = {1};
+  size_t len;
+  uint8_t *frame = response_frame(9, payload, sizeof(payload), &len);
+
+  // untracked: routes to fallthrough, pending cb never fires
+  assert(rpc_client_read(&client, frame, len) == 0);
+  assert(reply.count == 0);
+  assert(fall.count == 1);
+
+  free(frame);
+  rpc_client_destroy(&client);
+}
+
+static void
+test_event_falls_through_even_when_tracking (void) {
+  recorder_t fall = {0};
+  reply_t reply = {0};
+  rpc_client_t client;
+  rpc_client_init(&client, on_fallthrough, &fall);
+
+  rpc_client_track(&client, 0, on_reply, &reply); // contrived: id 0
+
+  // an event is a request frame (type 1) with id 0 - resolution is response-
+  // only, so it must NOT resolve a pending entry; it goes to the fallthrough
+  rpc_message_t ev = {0};
+  ev.type = rpc_request;
+  ev.id = 0;
+  ev.command = 1;
+  ev.stream = 0;
+  uint8_t epayload[] = {42};
+  ev.data = epayload;
+  ev.len = sizeof(epayload);
+  size_t len;
+  uint8_t *frame = encode_message(&ev, &len);
+
+  assert(rpc_client_read(&client, frame, len) == 0);
+  assert(reply.count == 0);
+  assert(fall.count == 1);
+  assert(fall.last_type == rpc_request);
+
+  free(frame);
+  rpc_client_destroy(&client);
+}
+
+static void
+test_track_grows_past_cap (void) {
+  reply_t replies[8] = {0};
+  rpc_client_t client;
+  rpc_client_init(&client, noop, NULL);
+
+  // more than the initial cap (4) to exercise the pending realloc growth path
+  for (uint64_t i = 1; i <= 8; i++) {
+    assert(rpc_client_track(&client, i, on_reply, &replies[i - 1]) == 0);
+  }
+  for (uint64_t i = 1; i <= 8; i++) {
+    uint8_t payload[] = {1};
+    size_t len;
+    uint8_t *frame = response_frame(i, payload, sizeof(payload), &len);
+    assert(rpc_client_read(&client, frame, len) == 0);
+    free(frame);
+  }
+  for (int i = 0; i < 8; i++) assert(replies[i].count == 1);
+
+  rpc_client_destroy(&client);
+}
+
+typedef struct {
+  rpc_client_t *client;
+  int count;
+} tracker_ctx_t;
+
+// a resolution callback that registers follow-up requests, forcing a pending
+// realloc mid-callback - must not corrupt the in-flight resolution (the entry
+// was copied to the stack and swap-removed before this ran)
+static void
+on_reply_then_track (void *data, const rpc_message_t *msg) {
+  (void) msg;
+  tracker_ctx_t *ctx = data;
+  ctx->count++;
+  for (uint64_t i = 100; i < 110; i++) {
+    assert(rpc_client_track(ctx->client, i, noop, NULL) == 0);
+  }
+}
+
+static void
+test_callback_tracks_during_resolution (void) {
+  rpc_client_t client;
+  rpc_client_init(&client, noop, NULL);
+  tracker_ctx_t ctx = {&client, 0};
+
+  rpc_client_track(&client, 7, on_reply_then_track, &ctx);
+
+  uint8_t payload[] = {1};
+  size_t len;
+  uint8_t *frame = response_frame(7, payload, sizeof(payload), &len);
+  assert(rpc_client_read(&client, frame, len) == 0);
+  assert(ctx.count == 1); // resolved exactly once despite the realloc
+
+  free(frame);
+  rpc_client_destroy(&client);
+}
+
 int
 main (void) {
   test_next_id();
@@ -199,5 +391,11 @@ main (void) {
   test_read_reentrancy_guard();
   test_read_malformed();
   test_read_empty();
+  test_track_resolves_once();
+  test_error_reply_resolves();
+  test_untrack();
+  test_event_falls_through_even_when_tracking();
+  test_track_grows_past_cap();
+  test_callback_tracks_during_resolution();
   return 0;
 }

@@ -25,8 +25,55 @@ rpc_client_next_id (rpc_client_t *client) {
 }
 
 int
+rpc_client_track (rpc_client_t *client, uint64_t id, rpc_client_cb cb, void *data) {
+  if (client->pending_len == client->pending_cap) {
+    size_t cap = client->pending_cap ? client->pending_cap * 2 : 4;
+    rpc_client_pending_t *next = realloc(client->pending, cap * sizeof(*next));
+    if (next == NULL) return rpc_client_err_alloc;
+    client->pending = next;
+    client->pending_cap = cap;
+  }
+  client->pending[client->pending_len].id = id;
+  client->pending[client->pending_len].cb = cb;
+  client->pending[client->pending_len].data = data;
+  client->pending_len++;
+  return 0;
+}
+
+int
+rpc_client_untrack (rpc_client_t *client, uint64_t id) {
+  for (size_t i = 0; i < client->pending_len; i++) {
+    if (client->pending[i].id == id) {
+      client->pending[i] = client->pending[--client->pending_len];
+      return 0;
+    }
+  }
+  return 0;
+}
+
+// Resolve a pending one-shot reply. Returns 1 if it consumed the message.
+static int
+client__resolve (rpc_client_t *client, const rpc_message_t *msg) {
+  if (msg->type != rpc_response || msg->stream != 0) return 0;
+  for (size_t i = 0; i < client->pending_len; i++) {
+    if (client->pending[i].id == msg->id) {
+      // swap-remove before invoking, so the callback may track/untrack safely
+      rpc_client_pending_t entry = client->pending[i];
+      client->pending[i] = client->pending[--client->pending_len];
+      entry.cb(entry.data, msg);
+      return 1;
+    }
+  }
+  return 0;
+}
+
+int
 rpc_client_read (rpc_client_t *client, const uint8_t *buf, size_t len) {
   if (client->reading) return rpc_client_err_reentrant;
+  // The guard also keeps the accumulation buffer immutable during callbacks: a
+  // reentrant read (which could realloc the buffer) is refused, so the msg
+  // views handed to a callback stay valid. A future "allow reentrant read"
+  // change must not break this.
   client->reading = 1;
 
   if (len > 0) {
@@ -56,7 +103,9 @@ rpc_client_read (rpc_client_t *client, const uint8_t *buf, size_t len) {
       client->reading = 0;
       return rpc_client_err_decode;
     }
-    if (client->on_message) client->on_message(client->on_message_data, &msg);
+    if (!client__resolve(client, &msg)) {
+      if (client->on_message) client->on_message(client->on_message_data, &msg);
+    }
     start = state.start; // post-decode start is the consumed offset
   }
 
