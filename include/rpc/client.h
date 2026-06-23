@@ -8,7 +8,7 @@ extern "C" {
 #include <stddef.h>
 #include <stdint.h>
 
-#include "rpc.h"
+#include <rpc.h>
 
 // Resolved reply, or a routed event/stream frame. The views in *msg (data,
 // message, code) point into the runtime's internal buffer and are valid ONLY

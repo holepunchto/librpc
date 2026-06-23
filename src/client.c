@@ -1,7 +1,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "../include/client.h"
+#include "../include/rpc/client.h"
 
 int
 rpc_client_init (rpc_client_t *client, rpc_client_cb on_message, void *data) {
@@ -103,7 +103,7 @@ rpc_client_read (rpc_client_t *client, const uint8_t *buf, size_t len) {
       client->reading = 0;
       return rpc_client_err_decode;
     }
-    if (!client__resolve(client, &msg)) {
+    if (!rpc_client__resolve(client, &msg)) {
       if (client->on_message) client->on_message(client->on_message_data, &msg);
     }
     start = state.start; // post-decode start is the consumed offset

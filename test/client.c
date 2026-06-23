@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "../include/client.h"
+#include "../include/rpc/client.h"
 
 static void
 noop (void *data, const rpc_message_t *msg) {
