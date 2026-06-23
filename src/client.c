@@ -53,7 +53,7 @@ rpc_client_untrack (rpc_client_t *client, uint64_t id) {
 
 // Resolve a pending one-shot reply. Returns 1 if it consumed the message.
 static int
-client__resolve (rpc_client_t *client, const rpc_message_t *msg) {
+rpc_client__resolve (rpc_client_t *client, const rpc_message_t *msg) {
   if (msg->type != rpc_response || msg->stream != 0) return 0;
   for (size_t i = 0; i < client->pending_len; i++) {
     if (client->pending[i].id == msg->id) {

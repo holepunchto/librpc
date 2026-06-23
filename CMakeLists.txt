@@ -19,7 +19,7 @@ target_sources(
   rpc
   INTERFACE
     include/rpc.h
-    include/client.h
+    include/rpc/client.h
   PRIVATE
     src/rpc.c
     src/client.c
@@ -76,7 +76,7 @@ install(TARGETS rpc_shared rpc_static)
 
 install(FILES include/rpc.h DESTINATION include)
 
-install(FILES include/client.h DESTINATION include)
+install(DIRECTORY include/rpc DESTINATION include)
 
 if(PROJECT_IS_TOP_LEVEL)
   enable_testing()
