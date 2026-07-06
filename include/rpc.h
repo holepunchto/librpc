@@ -67,6 +67,8 @@ struct rpc_message_s {
     struct {
       utf8_string_view_t message;
       utf8_string_view_t code;
+      // Canonical wire field is `errno` (JS/Swift; see hrpc-test WIRE.md); named
+      // `status` here because `errno` is a reserved macro in C (<errno.h>).
       int64_t status;
     };
   };
