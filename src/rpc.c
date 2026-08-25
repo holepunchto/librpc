@@ -323,5 +323,5 @@ rpc_decode_message (compact_state_t *state, rpc_message_t *result) {
     return rpc_error;
   }
 
-  return 0;
+  return err;
 }

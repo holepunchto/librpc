@@ -176,6 +176,23 @@ test_read_malformed (void) {
 }
 
 static void
+test_read_malformed_body (void) {
+  recorder_t rec = {0};
+  rpc_client_t client;
+  rpc_client_init(&client, on_fallthrough, &rec);
+
+  // A well formed header - length 2, both promised bytes present - over a body
+  // that ends after `id`, so `command` cannot be decoded. The read must fail,
+  // and nothing may reach the fallthrough.
+  uint8_t frame[] = {0x02, 0x00, 0x00, 0x00, rpc_request, 7};
+
+  assert(rpc_client_read(&client, frame, sizeof(frame)) == rpc_client_err_decode);
+  assert(rec.count == 0);
+
+  rpc_client_destroy(&client);
+}
+
+static void
 test_read_empty (void) {
   recorder_t rec = {0};
   rpc_client_t client;
@@ -390,6 +407,7 @@ main (void) {
   test_read_multiple_frames();
   test_read_reentrancy_guard();
   test_read_malformed();
+  test_read_malformed_body();
   test_read_empty();
   test_track_resolves_once();
   test_error_reply_resolves();
