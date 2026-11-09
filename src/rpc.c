@@ -72,6 +72,22 @@ rpc_preencode__stream (compact_state_t *state, const rpc_message_t *stream) {
   return err;
 }
 
+static inline int
+rpc_preencode__cancel (compact_state_t *state, const rpc_message_t *cancel) {
+  int err;
+
+  err = compact_preencode_utf8(state, cancel->message);
+  assert(err == 0);
+
+  err = compact_preencode_utf8(state, cancel->code);
+  assert(err == 0);
+
+  err = compact_preencode_int(state, cancel->status);
+  assert(err == 0);
+
+  return err;
+}
+
 int
 rpc_preencode_message (compact_state_t *state, const rpc_message_t *message) {
   int err;
@@ -94,6 +110,9 @@ rpc_preencode_message (compact_state_t *state, const rpc_message_t *message) {
     break;
   case rpc_stream:
     err = rpc_preencode__stream(state, message);
+    break;
+  case rpc_cancel:
+    err = rpc_preencode__cancel(state, message);
     break;
   }
 
@@ -169,6 +188,22 @@ rpc_encode__stream (compact_state_t *state, const rpc_message_t *stream) {
   return err;
 }
 
+static inline int
+rpc_encode__cancel (compact_state_t *state, const rpc_message_t *cancel) {
+  int err;
+
+  err = compact_encode_utf8(state, cancel->message);
+  assert(err == 0);
+
+  err = compact_encode_utf8(state, cancel->code);
+  assert(err == 0);
+
+  err = compact_encode_int(state, cancel->status);
+  assert(err == 0);
+
+  return err;
+}
+
 int
 rpc_encode_message (compact_state_t *state, const rpc_message_t *message) {
   int err;
@@ -195,6 +230,9 @@ rpc_encode_message (compact_state_t *state, const rpc_message_t *message) {
     break;
   case rpc_stream:
     err = rpc_encode__stream(state, message);
+    break;
+  case rpc_cancel:
+    err = rpc_encode__cancel(state, message);
     break;
   }
 
@@ -291,6 +329,26 @@ rpc_decode__stream (compact_state_t *state, uint64_t id, rpc_message_t *result) 
   return 0;
 }
 
+static inline int
+rpc_decode__cancel (compact_state_t *state, uint64_t id, rpc_message_t *result) {
+  int err;
+
+  rpc_message_t cancel = {rpc_cancel, id};
+
+  err = compact_decode_utf8(state, &cancel.message);
+  if (err < 0) return rpc_error;
+
+  err = compact_decode_utf8(state, &cancel.code);
+  if (err < 0) return rpc_error;
+
+  err = compact_decode_int(state, &cancel.status);
+  if (err < 0) return rpc_error;
+
+  if (result) *result = cancel;
+
+  return 0;
+}
+
 int
 rpc_decode_message (compact_state_t *state, rpc_message_t *result) {
   int err;
@@ -318,6 +376,9 @@ rpc_decode_message (compact_state_t *state, rpc_message_t *result) {
     break;
   case rpc_stream:
     err = rpc_decode__stream(state, id, result);
+    break;
+  case rpc_cancel:
+    err = rpc_decode__cancel(state, id, result);
     break;
   default:
     return rpc_error;

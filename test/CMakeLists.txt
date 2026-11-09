@@ -1,4 +1,5 @@
 list(APPEND tests
+  cancel
   message
   client
 )
@@ -9,13 +10,18 @@ foreach(test IN LISTS tests)
   target_link_libraries(
     ${test}
     PRIVATE
-      rpc
-      compact
-      utf
+      rpc_static
   )
 
   add_test(
     NAME ${test}
     COMMAND ${test}
+    WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
+  )
+
+  set_tests_properties(
+    ${test}
+    PROPERTIES
+    TIMEOUT 30
   )
 endforeach()
