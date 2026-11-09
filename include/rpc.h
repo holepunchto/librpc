@@ -23,6 +23,7 @@ enum {
   rpc_request = 1,
   rpc_response = 2,
   rpc_stream = 3,
+  rpc_cancel = 4,
 };
 
 enum {
@@ -39,18 +40,18 @@ enum {
 };
 
 struct rpc_message_s {
-  uintmax_t type;
-  uintmax_t id;
+  uint64_t type;
+  uint64_t id;
 
   union {
     // For `rpc_request`
-    uintmax_t command;
+    uint64_t command;
 
     // For `rpc_response`
     bool error;
   };
 
-  uintmax_t stream;
+  uint64_t stream;
 
   union {
     // For:
@@ -65,10 +66,11 @@ struct rpc_message_s {
     // For:
     //   1. `rpc_response` if `stream == 0` and `error == true`
     //   2. `rpc_stream` if `stream & rpc_stream_error`
+    //   3. `rpc_cancel`
     struct {
       utf8_string_view_t message;
       utf8_string_view_t code;
-      intmax_t status;
+      int64_t status;
     };
   };
 };
