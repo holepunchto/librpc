@@ -1,5 +1,7 @@
 list(APPEND tests
   cancel
+  message
+  client
 )
 
 foreach(test IN LISTS tests)

@@ -11,7 +11,6 @@ extern "C" {
 
 #include "utf/string.h"
 
-typedef struct rps_s rpc_t;
 typedef struct rpc_message_s rpc_message_t;
 
 enum {
